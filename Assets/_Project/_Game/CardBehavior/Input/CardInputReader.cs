@@ -2,7 +2,7 @@ using System;
 using Cobra.Utilities.Extensions;
 using UnityEngine;
 
-public class CardInputReader : MonoBehaviour, ICardPressInputReader, ICardHoverInputReader, ICardDragInputReader, ICardInputReader
+public class CardInputReceiver : MonoBehaviour, ICardPressInputReceiver, ICardHoverInputReceiver, ICardDragInputReceiver, ICardInputReader
 {
     #region Press Control
     private bool pressed = false;
@@ -61,24 +61,21 @@ public interface ICardInputReader
     public Action<Vector2> OnDragBegin { get; set; }
     public Action<Vector2> OnDragEnd { get; set; }
     public Action<Vector2> OnDragChange { get; set; }
-    
-    public Action ToggleSelect { get; set; }
 }
-public interface ICardDragInputReader
+public interface ICardDragInputReceiver
 {
-    
     public void StartDrag(Vector2 position);
     public void StopDrag(Vector2 position);
     public void Drag(Vector2 position);
 }
 
-public interface ICardHoverInputReader
+public interface ICardHoverInputReceiver
 {
     public void OnHoverEnter();
     public void OnHoverExit();
 }
 
-public interface ICardPressInputReader
+public interface ICardPressInputReceiver
 {
     public void OnDownPressed();
     public void OnUpPressed();

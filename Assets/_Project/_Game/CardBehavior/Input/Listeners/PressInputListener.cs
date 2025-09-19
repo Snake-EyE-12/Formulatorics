@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class PressInputReceiver : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+public class PressInputListener : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    private ICardPressInputReader pressInput;
+    private ICardPressInputReceiver pressInput;
     private void Awake()
     {
-        pressInput = gameObject.GetComponent<ICardPressInputReader>();
+        pressInput = gameObject.GetComponent<ICardPressInputReceiver>();
     }
 
     public void OnPointerDown(PointerEventData eventData)

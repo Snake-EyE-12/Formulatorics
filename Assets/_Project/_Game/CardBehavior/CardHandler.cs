@@ -50,7 +50,7 @@ public class CardHandler : MonoBehaviour, IZonable
         dragOriginOffset = anchorHandler.Origin() - mousePosition;
         
         zoneHandler.OnNearestZoneChange += OnNearestZoneUpdate;
-        inputHandler.ToggleSelect -= ToggleSelectState;
+        //inputHandler.ToggleSelect -= ToggleSelectState;
         
         activeAnchorState = draggingAnchorState;
     }
@@ -58,7 +58,7 @@ public class CardHandler : MonoBehaviour, IZonable
     private void OnDragEnd(Vector2 mousePosition)
     {
         zoneHandler.OnNearestZoneChange -= OnNearestZoneUpdate;
-        inputHandler.ToggleSelect += ToggleSelectState;
+        //inputHandler.ToggleSelect += ToggleSelectState;
         
         activeAnchorState = slottedAnchorState;
     }
@@ -84,14 +84,6 @@ public class CardHandler : MonoBehaviour, IZonable
         slotHandler.UpdateActiveZone(zone, this);
     }
 
-    private bool selected;
-    [SerializeField] private float selectedHeight = 4;
-    private void ToggleSelectState()
-    {
-        selected = !selected;
-        anchorHandler.SetOffset(Vector2.up * (selected ? selectedHeight : 0));
-        displayHandler.SetSelected(selected);
-    }
 
     public Transform GetZoneTransform() => slotHandler.Transform();
 

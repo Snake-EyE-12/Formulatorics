@@ -46,5 +46,4 @@ public interface ICardDisplay
 {
     public void Follow(Vector2 posTarget, float angleTarget);
     public Transform Transform();
-    public void SetSelected(bool active);
 }

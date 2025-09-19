@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class HoverInputReceiver : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class HoverInputListener : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    private ICardHoverInputReader hoverInput;
+    private ICardHoverInputReceiver hoverInput;
     private void Awake()
     {
-        hoverInput = gameObject.GetComponent<ICardHoverInputReader>();
+        hoverInput = gameObject.GetComponent<ICardHoverInputReceiver>();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
