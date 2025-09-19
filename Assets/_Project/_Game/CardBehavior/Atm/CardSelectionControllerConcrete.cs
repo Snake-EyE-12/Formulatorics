@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class CardSelectionControllerConcrete : MonoBehaviour, CardSelectionController
+public class CardSelectionController : MonoBehaviour, ICardSelectionHandler
 {
     private int count;
     private int maxSelect = 4;
@@ -26,7 +26,7 @@ public class CardSelectionControllerConcrete : MonoBehaviour, CardSelectionContr
 }
 
 
-public interface CardSelectionController
+public interface ICardSelectionHandler
 {
     public bool TrySelect(CardSelectable selectable);
     public bool TryDeselect(CardSelectable selectable);

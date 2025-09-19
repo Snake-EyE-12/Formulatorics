@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class CardController
+public class CardController : MonoBehaviour
 {
     private ICardHoverController hoverController;
     private ICardSelectionController selectionController;
@@ -17,6 +17,18 @@ public interface CardSelectable
     public bool IsSelected();
 }
 
+public class CardHoverController : ICardHoverController
+{
+    public void OnHoverEnter()
+    {
+        
+    }
+
+    public void OnHoverExit()
+    {
+        
+    }
+}
 public interface ICardHoverController
 {
     public void OnHoverEnter();
