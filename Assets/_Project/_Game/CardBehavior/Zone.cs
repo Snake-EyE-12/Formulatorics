@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Cobra.Utilities;
 using Cobra.Utilities.Extensions;
 using UnityEngine;
 
@@ -39,9 +40,21 @@ public class Zone : MonoBehaviour, IZone
         ZoneHandler.Remove(this);
     }
 
-    public float GetDistance(Vector2 center)
+    public float GetDistance(Vector2 point)
     {
-        return Vector2.SqrMagnitude(center - transform.position.XY());
+        // Convert world point into local space of the rect
+        Vector3 localPoint = slotContainer.InverseTransformPoint(point);
+
+        // Clamp local position into rect’s bounds
+        Rect rect = slotContainer.rect;
+        float clampedX = Mathf.Clamp(localPoint.x, rect.xMin, rect.xMax);
+        float clampedY = Mathf.Clamp(localPoint.y, rect.yMin, rect.yMax);
+
+        // Convert back to world space
+        Vector3 closestWorld = slotContainer.TransformPoint(new Vector3(clampedX, clampedY, 0));
+
+        // Squared distance (no sqrt for performance)
+        return ((Vector2)closestWorld - point).sqrMagnitude;
     }
 
     [SerializeField] private bool open = true;
@@ -65,34 +78,35 @@ public class Zone : MonoBehaviour, IZone
         OrientSlots();
     }
 
+    [SerializeField] private float zonableWidth = 100f;
+    [SerializeField] private Curve heightCurve;
+    [SerializeField] private Curve rotationCurve;
+
     private void OrientSlots()
     {
         int count = zonables.Count;
+        float divisor = Mathf.Max(count - 1, 1);
         if (count == 0) return;
 
-        float halfWidth = slotContainer.rect.width * 0.5f;
+        float halfWidth = (slotContainer.rect.width - zonableWidth) * 0.5f;
 
         for (int i = 0; i < count; i++)
         {
-            // Step 1: normalized position across range [0..1]
-            float t = (count == 1) ? 0.5f : (float)i / (count - 1);
+            float t = (float)(i + 1) / (count + 1);
 
-            // Step 2: map to local X
             float localX = Mathf.Lerp(-halfWidth, halfWidth, t);
 
-            // Step 3: convert to world position along container’s local X axis
-            Vector3 localPos = new Vector3(localX, 0, 0);
+            Vector3 localPos = new Vector3(localX, heightCurve.Evaluate(i / divisor), 0);
             zonables[i].GetZoneTransform().localPosition = localPos;
+    
+            zonables[i].SetRotation((count > 1) ? -rotationCurve.Evaluate(i / divisor) : 0);
 
-            // Step 4: maintain sibling order
             zonables[i].GetZoneTransform().SetSiblingIndex(i);
-            
-            // Step 5: maintain display sibling order
             zonables[i].GetDisplayTransform().SetSiblingIndex(i);
         }
+
     }
-
-
+    
     public void Reorder(IZonable zonable, Vector2 anchorPoint)
     {
         Vector3 local = slotContainer.InverseTransformPoint(anchorPoint);
@@ -110,6 +124,16 @@ public class Zone : MonoBehaviour, IZone
         OrientSlots();
     }
 
+    private void OnDrawGizmos()
+    {
+        if (slotContainer == null) return;
+
+        Gizmos.color = Color.red;
+        Matrix4x4 oldMatrix = Gizmos.matrix;
+        Gizmos.matrix = slotContainer.localToWorldMatrix;
+        Gizmos.DrawWireCube(slotContainer.rect.center, slotContainer.rect.size);
+        Gizmos.matrix = oldMatrix;
+    }
 }
 
 public interface IZone

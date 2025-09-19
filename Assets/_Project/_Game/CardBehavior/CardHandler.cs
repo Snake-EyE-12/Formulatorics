@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Cobra.Utilities.Extensions;
 using UnityEngine;
 
 public class CardHandler : MonoBehaviour, IZonable
@@ -49,6 +50,7 @@ public class CardHandler : MonoBehaviour, IZonable
         dragOriginOffset = anchorHandler.Origin() - mousePosition;
         
         zoneHandler.OnNearestZoneChange += OnNearestZoneUpdate;
+        inputHandler.ToggleSelect -= ToggleSelectState;
         
         activeAnchorState = draggingAnchorState;
     }
@@ -56,6 +58,7 @@ public class CardHandler : MonoBehaviour, IZonable
     private void OnDragEnd(Vector2 mousePosition)
     {
         zoneHandler.OnNearestZoneChange -= OnNearestZoneUpdate;
+        inputHandler.ToggleSelect += ToggleSelectState;
         
         activeAnchorState = slottedAnchorState;
     }
@@ -73,7 +76,7 @@ public class CardHandler : MonoBehaviour, IZonable
     private void Update()
     {
         anchorHandler.Follow(activeAnchorState.GetFollowPosition());
-        displayHandler.Follow(anchorHandler.Origin());
+        displayHandler.Follow(anchorHandler.Origin(), rot);
     }
 
     private void OnNearestZoneUpdate(IZone zone)
@@ -81,15 +84,33 @@ public class CardHandler : MonoBehaviour, IZonable
         slotHandler.UpdateActiveZone(zone, this);
     }
 
+    private bool selected;
+    [SerializeField] private float selectedHeight = 4;
+    private void ToggleSelectState()
+    {
+        selected = !selected;
+        anchorHandler.SetOffset(Vector2.up * (selected ? selectedHeight : 0));
+        displayHandler.SetSelected(selected);
+    }
+
     public Transform GetZoneTransform() => slotHandler.Transform();
 
     public Transform GetDisplayTransform() => displayHandler.Transform();
+    private float rot;
+
+    public void SetRotation(float rotation)
+    {
+        rot = rotation;
+    }
+
 }
 
 public interface IZonable
 {
     public Transform GetZoneTransform();
     public Transform GetDisplayTransform();
+    public void SetRotation(float rotation);
+
 }
 
 public class DraggingAnchorPositionFinder : IAnchorFollowFinder

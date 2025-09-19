@@ -14,7 +14,11 @@ public class CardInputReader : MonoBehaviour, ICardPressInputReader, ICardHoverI
     public void OnUpPressed()
     {
         pressed = false;
+        ToggleSelect?.Invoke();
     }
+
+    public Action ToggleSelect { get; set; }
+
     #endregion
     
     #region Hover Control
@@ -57,6 +61,8 @@ public interface ICardInputReader
     public Action<Vector2> OnDragBegin { get; set; }
     public Action<Vector2> OnDragEnd { get; set; }
     public Action<Vector2> OnDragChange { get; set; }
+    
+    public Action ToggleSelect { get; set; }
 }
 public interface ICardDragInputReader
 {
@@ -76,4 +82,5 @@ public interface ICardPressInputReader
 {
     public void OnDownPressed();
     public void OnUpPressed();
+
 }
