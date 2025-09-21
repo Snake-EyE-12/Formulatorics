@@ -10,7 +10,8 @@ public class CardZoneFinder : MonoBehaviour, ICardZoneFinder
     
     public void Search(Vector2 origin)
     {
-        IZone nearestLegalZone = ZoneHandler.GetSortedZonesByDistance(origin).FirstOrDefault(x => x.ValidFor());
+        IZone nearestLegalZone = ServiceLocator.Get<IZoneControl>().Zones.OrderBy((x) => x.GetDistance(origin)).FirstOrDefault(x => x.ValidFor());
+        
         if (nearestLegalZone == null) return;
         if (nearestLegalZone != nearest) ChangeNearestZone(nearestLegalZone);
     }

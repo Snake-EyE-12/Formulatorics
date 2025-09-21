@@ -11,11 +11,11 @@ public class HoverInputListener : MonoBehaviour, IPointerEnterHandler, IPointerE
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        hoverInput.OnHoverEnter();
+        hoverInput.OnPointerEnter();
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        hoverInput.OnHoverExit();
+        hoverInput.OnPointerExit();
     }
 }

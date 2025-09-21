@@ -7,43 +7,64 @@ public class CardDisplay : MonoBehaviour, ICardDisplay
 {
     [SerializeField] private float translationSpeed = 10f;
     [SerializeField] private float rotationSpeed = 10f;
-    private ICardFollowStrategy followStrategy;
+    private FollowTranslationalStrategy followTranslationalStrategy;
+    private FollowRotationalStrategy followRotationalStrategy;
     [SerializeField] private Image image;
 
     private void Awake()
     {
-        followStrategy = GetComponent<ICardFollowStrategy>();
+        followTranslationalStrategy = GetComponent<FollowTranslationalStrategy>();
+        followRotationalStrategy = GetComponent<FollowRotationalStrategy>();
         image.color = Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
-        initShadowPos = shadow.anchoredPosition;
+        initialScale = transform.localScale;
+        desiredScale = initialScale;
     }
 
     public void Follow(Vector2 posTarget, float angleTarget)
     {
-        transform.position = followStrategy.Position(transform.position, posTarget, translationSpeed * Time.deltaTime);
-        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, 0, angleTarget), rotationSpeed * Time.deltaTime);
+        transform.position = followTranslationalStrategy.CalculatePosition(transform.position, posTarget);
+        transform.rotation = followRotationalStrategy.CalculateRotation(transform.rotation, Quaternion.Euler(0, 0, angleTarget));
     }
 
-    public Transform Transform() => transform;
     [SerializeField] private RectTransform shadow;
-    private Vector2 initShadowPos;
-    [SerializeField] private Vector2 shadowOffsetActive;
-    public void SetSelected(bool active)
+
+    public void SetParent(Transform newParent)
     {
-        if (active)
-        {
-            transform.localScale = Vector3.one * 1.4f;
-            shadow.anchoredPosition = initShadowPos + shadowOffsetActive;
-        }
-        else
-        {
-            transform.localScale = Vector3.one * 1.0f;
-            shadow.anchoredPosition = initShadowPos;
-        }
+        transform.SetParent(newParent);
+    }
+
+    public void SetSiblingOrder(int siblingIndex)
+    {
+        transform.SetSiblingIndex(siblingIndex);
+    }
+
+    private Vector3 initialScale;
+    private Vector3 desiredScale;
+    public void Grow(float percent)
+    {
+        desiredScale = initialScale * percent;
+    }
+
+    [SerializeField] private float scaleSpeed = 10f;
+
+    public void Shrink()
+    {
+        desiredScale = initialScale;
+    }
+
+    private void Update()
+    {
+        transform.localScale = Vector3.Lerp(transform.localScale, desiredScale, Time.deltaTime * scaleSpeed);
     }
 }
 
-public interface ICardDisplay
+public interface ICardDisplay : ILayerOrderable, ISizable
 {
     public void Follow(Vector2 posTarget, float angleTarget);
-    public Transform Transform();
+}
+
+public interface ISizable
+{
+    public void Grow(float percent);
+    public void Shrink();
 }

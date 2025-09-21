@@ -1,31 +1,33 @@
 using System;
-using Cobra.Utilities.Extensions;
 using UnityEngine;
 
 public class CardAnchor : MonoBehaviour, ICardAnchor
 {
-    private ICardFollowStrategy followStrategy;
+    private FollowTranslationalStrategy followTranslationalStrategy;
 
     private void Awake()
     {
-        followStrategy = GetComponent<ICardFollowStrategy>();
+        followTranslationalStrategy = GetComponent<FollowTranslationalStrategy>();
     }
 
     public void Follow(Vector2 target)
     {
-        transform.position = followStrategy.Position(transform.position, target + heightOffset, 0);
+        transform.position = followTranslationalStrategy.CalculatePosition(transform.position, target);
     }
     public Vector2 Origin() => transform.position;
-    private Vector2 heightOffset;
-    public void SetOffset(Vector2 offset)
-    {
-        heightOffset = offset;
-    }
 }
 
-public interface ICardAnchor
+public interface ICardAnchor : IPositionFollowable
 {
     public void Follow(Vector2 position);
+}
+
+public interface IPositionFollowable
+{
     public Vector2 Origin();
-    public void SetOffset(Vector2 offset);
+}
+
+public interface IRotationFollowable
+{
+    public float Angle();
 }
