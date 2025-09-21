@@ -83,7 +83,6 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
         displayHandler.Grow(growthPercent);
         // display flick animation
         ServiceLocator.Get<IFocusControl>().Focus(this);
-        ServiceLocator.Get<IViewControl>().Showcase(this);
     }
 
     public void OnLostHover()
@@ -100,13 +99,15 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     
     #region Dragging
 
+    private IDragControl cachedDragControl;
     private void DragStartPerformed(Vector2 pos)
     {
         ServiceLocator.Get<IDragControl>().StartDrag(this, pos);
+        cachedDragControl = ServiceLocator.Get<IDragControl>();
     }
     private void DragEndPerformed(Vector2 pos)
     {
-        ServiceLocator.Get<IDragControl>().EndDrag(this, pos);
+        cachedDragControl.EndDrag(this, pos);
     }
     private void DragPerformed(Vector2 pos)
     {
@@ -121,6 +122,7 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
         dragging = true;
         dragOriginOffset = inputHandler.Origin() - mousePosition;
         zoneHandler.OnNearestZoneChange += OnNearestZoneUpdate;
+        ServiceLocator.Get<IViewControl>().Showcase(this);
     }
 
     public void OnDragEnd(Vector2 mousePosition)
