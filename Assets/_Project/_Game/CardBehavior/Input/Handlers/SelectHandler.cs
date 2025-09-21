@@ -12,9 +12,9 @@ public class SelectHandler : MonoBehaviour, ISelectControl
     // List of selections
     // Rule for total
     // Call fail in case
+    // TODO:
     public void Select(ISelectable selectable)
     {
-        Debug.Log(selectable);
         selectable.OnSelect();
     }
 

@@ -1,8 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NaughtyAttributes;
 //using Cobra.Utilities.Extensions;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDraggable, ISelectable, IShowcaseable
 {
@@ -31,6 +34,14 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
         inputHandler.OnDragBegin += DragStartPerformed;
         inputHandler.OnDragEnd += DragEndPerformed;
         inputHandler.OnDragChange += DragPerformed;
+
+        StartCoroutine(BindToZoneTemp()); //wtf
+    }
+
+    private IEnumerator BindToZoneTemp()
+    {
+        yield return new WaitForSeconds(Random.value * 1 + 0.1f);
+        BindToZone();
     }
     
     #endregion
@@ -121,21 +132,19 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     {
         dragging = true;
         dragOriginOffset = inputHandler.Origin() - mousePosition;
-        zoneHandler.OnNearestZoneChange += OnNearestZoneUpdate;
         ServiceLocator.Get<IViewControl>().Showcase(this);
     }
 
     public void OnDragEnd(Vector2 mousePosition)
     {
         dragging = false;
-        zoneHandler.OnNearestZoneChange -= OnNearestZoneUpdate;
     }
 
     public void OnDrag(Vector2 mousePosition)
     {
         anchorHandler.Follow(mousePosition + dragOriginOffset);
-        
-        zoneHandler.Search(anchorHandler.Origin());
+
+        BindToZone();
         
         slotHandler.ReorderActiveZone(anchorHandler.Origin(), this);
     }
@@ -166,10 +175,13 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     #endregion
     
     #region Zoning
-    
-    private void OnNearestZoneUpdate(IZone zone)
+
+    private void BindToZone()
     {
-        slotHandler.UpdateActiveZone(zone, this);
+        if (zoneHandler.Find(anchorHandler.Origin(), out IZone newNearestZone))
+        {
+            slotHandler.UpdateActiveZone(newNearestZone, this);
+        }
     }
 
     public void SlotTo(Vector2 position, float angle, int siblingIndex)

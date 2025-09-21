@@ -5,8 +5,6 @@ using Random = UnityEngine.Random;
 
 public class CardDisplay : MonoBehaviour, ICardDisplay
 {
-    [SerializeField] private float translationSpeed = 10f;
-    [SerializeField] private float rotationSpeed = 10f;
     private FollowTranslationalStrategy followTranslationalStrategy;
     private FollowRotationalStrategy followRotationalStrategy;
     [SerializeField] private Image image;
@@ -26,7 +24,6 @@ public class CardDisplay : MonoBehaviour, ICardDisplay
         transform.rotation = followRotationalStrategy.CalculateRotation(transform.rotation, Quaternion.Euler(0, 0, angleTarget));
     }
 
-    [SerializeField] private RectTransform shadow;
 
     public void SetParent(Transform newParent)
     {
@@ -43,18 +40,23 @@ public class CardDisplay : MonoBehaviour, ICardDisplay
     public void Grow(float percent)
     {
         desiredScale = initialScale * percent;
+        shadow.SetOffset(shadowOffset);
     }
 
     [SerializeField] private float scaleSpeed = 10f;
+    [SerializeField] private ShadowControl shadow;
+    [SerializeField] private float shadowOffset = 20f;
 
     public void Shrink()
     {
         desiredScale = initialScale;
+        shadow.SetOffset(0);
     }
 
     private void Update()
     {
-        transform.localScale = Vector3.Lerp(transform.localScale, desiredScale, Time.deltaTime * scaleSpeed);
+        float t = 1f - Mathf.Exp(-scaleSpeed * Time.deltaTime);
+        transform.localScale = Vector3.Lerp(transform.localScale, desiredScale, t);
     }
 }
 
