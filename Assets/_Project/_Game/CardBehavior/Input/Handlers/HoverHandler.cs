@@ -16,6 +16,7 @@ public class HoverHandler : MonoBehaviour, IHoverControl
         previous?.OnLostHover();
         previous = candidate;
         candidate.OnGainHover();
+        ServiceLocator.Get<IGroupInteractionControl>().OnHoveredOverSomething();
     }
 
     public void HoverExit(IHoverable candidate)
@@ -23,6 +24,7 @@ public class HoverHandler : MonoBehaviour, IHoverControl
         if (candidate != previous) return;
         previous?.OnLostHover();
         previous = null;
+        ServiceLocator.Get<IGroupInteractionControl>().OnHoveringNothing();
     }
 }
 

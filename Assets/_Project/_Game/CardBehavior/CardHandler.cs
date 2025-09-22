@@ -7,7 +7,7 @@ using NaughtyAttributes;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDraggable, ISelectable, IShowcaseable
+public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDraggable, ISelectable, IShowcaseable, IQuickSelectable
 {
     #region Initialization
     
@@ -35,19 +35,24 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
         inputHandler.OnDragEnd += DragEndPerformed;
         inputHandler.OnDragChange += DragPerformed;
 
-        StartCoroutine(BindToZoneTemp()); //wtf
     }
-
-    private IEnumerator BindToZoneTemp()
-    {
-        yield return new WaitForSeconds(Random.value * 1 + 0.1f);
-        BindToZone();
-    }
+    
     
     #endregion
 
     #region Selection
     private bool currentlySelected;
+    
+    
+    public void PerformSelect()
+    {
+        if(!currentlySelected) OnClickPerformed();
+    }
+
+    public void PerformDeselect()
+    {
+        if(currentlySelected) OnClickPerformed();
+    }
     private void OnClickPerformed()
     {
         if(!currentlySelected) ServiceLocator.Get<ISelectControl>().Select(this);
@@ -59,6 +64,7 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     {
         currentlySelected = true;
         slotHandler.SetOffset(Vector2.up * selectionHeight);
+        ServiceLocator.Get<IGroupInteractionControl>().Add_Select(this);
     }
 
     public void OnDeselect()
@@ -85,25 +91,17 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
         ServiceLocator.Get<IHoverControl>().HoverExit(this);
     }
 
-    [SerializeField] private float growthPercent;
+    [SerializeField] private float bringToFrontGrowthPercent;
     public void OnGainHover()
     {
-        // input size expand
-        inputHandler.Grow(growthPercent);
-        // display size expand slow
-        displayHandler.Grow(growthPercent);
-        // display flick animation
+        displayHandler.OnHover();
         ServiceLocator.Get<IFocusControl>().Focus(this);
+        ServiceLocator.Get<IGroupInteractionControl>().Add_Hover(this);
     }
 
     public void OnLostHover()
     {
-        // input size shrink
-        inputHandler.Shrink();
-        // display size shrink
-        displayHandler.Shrink();
-        // display small flick animation
-        ServiceLocator.Get<IViewControl>().Conceal(this);
+        displayHandler.OnHover();
     }
     
     #endregion
@@ -131,6 +129,8 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     public void OnDragBegin(Vector2 mousePosition)
     {
         dragging = true;
+        inputHandler.Grow(bringToFrontGrowthPercent);
+        displayHandler.OnStartDrag(bringToFrontGrowthPercent);
         dragOriginOffset = inputHandler.Origin() - mousePosition;
         ServiceLocator.Get<IViewControl>().Showcase(this);
     }
@@ -138,15 +138,17 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     public void OnDragEnd(Vector2 mousePosition)
     {
         dragging = false;
+        inputHandler.Shrink();
+        displayHandler.OnEndDrag();
+        ServiceLocator.Get<IViewControl>().Conceal(this);
     }
 
     public void OnDrag(Vector2 mousePosition)
     {
         anchorHandler.Follow(mousePosition + dragOriginOffset);
 
-        BindToZone();
+        BindToZone(anchorHandler.Origin());
         
-        slotHandler.ReorderActiveZone(anchorHandler.Origin(), this);
     }
     
     #endregion
@@ -176,12 +178,13 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     
     #region Zoning
 
-    private void BindToZone()
+    private void BindToZone(Vector2 searchOrigin)
     {
-        if (zoneHandler.Find(anchorHandler.Origin(), out IZone newNearestZone))
+        if (zoneHandler.Find(searchOrigin, out IZone newNearestZone))
         {
             slotHandler.UpdateActiveZone(newNearestZone, this);
         }
+        slotHandler.ReorderActiveZone(searchOrigin, this);
     }
 
     public void SlotTo(Vector2 position, float angle, int siblingIndex)
@@ -212,7 +215,7 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     private void Update()
     {
         if(!dragging) anchorHandler.Follow(slotHandler.Origin());
-        displayHandler.Follow(anchorHandler.Origin(), slotHandler.Angle());
+        displayHandler.Target(anchorHandler.Origin(), slotHandler.Angle());
         inputHandler.Follow(anchorHandler.Origin(), slotHandler.Angle());
     }
 
@@ -264,6 +267,12 @@ public interface ISelectable
     public void OnSelect();
     public void OnDeselect();
     public void OnFailSelect();
+}
+
+public interface IQuickSelectable
+{
+    public void PerformSelect();
+    public void PerformDeselect();
 }
 
 public interface ILayerOrderable
