@@ -33,7 +33,7 @@ public class CardDisplayEffectGimbal : MonoBehaviour
     private Vector2 previousPosition;
     private void Update()
     {
-        transform.rotation = rotationalStrategy.CalculateRotation(transform.rotation, GetTargetRotation());
+        transform.localRotation = rotationalStrategy.CalculateRotation(transform.localRotation, GetTargetRotation());
         previousPosition = transform.position;
     }
 
