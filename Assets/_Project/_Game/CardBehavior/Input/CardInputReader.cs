@@ -80,11 +80,6 @@ public class CardInputReceiver : MonoBehaviour, ICardPressInputReceiver, ICardHo
 
     private FollowTranslationalStrategy translationStrategy;
     private FollowRotationalStrategy rotationalStrategy;
-    public void Follow(Vector2 posTarget, float angleTarget)
-    {
-        transform.position = translationStrategy.CalculatePosition(transform.position, posTarget);
-        transform.rotation = rotationalStrategy.CalculateRotation(transform.rotation, Quaternion.Euler(0, 0, angleTarget));
-    }
     
     public Vector2 Origin()
     {
@@ -92,21 +87,37 @@ public class CardInputReceiver : MonoBehaviour, ICardPressInputReceiver, ICardHo
     }
     
     private Vector3 initialScale;
-    public void Grow(float percent)
+    public void AlterSize(float percent)
     {
         transform.localScale = initialScale * percent;
     }
 
-    public void Shrink()
+    public void ResetSize()
     {
         transform.localScale = initialScale;
     }
 
+    private Vector2 targetPos;
+    private Quaternion targetAngle;
+    public void SetTargetAngle(float angle)
+    {
+        targetAngle = Quaternion.Euler(0, 0, angle);
+    }
+
+    public void SetTargetLocation(Vector2 position)
+    {
+        targetPos = position;
+    }
+
+    public void ApproachDestination()
+    {
+        transform.position = translationStrategy.CalculatePosition(transform.position, targetPos);
+        transform.rotation = rotationalStrategy.CalculateRotation(transform.rotation, targetAngle);
+    }
 }
 
-public interface ICardInputReader : ILayerOrderable, IPositionFollowable, ISizable
+public interface ICardInputReader : ILayerOrderable, IPositionFollowable, ISizable, IHasTargetDestination
 {
-    public void Follow(Vector2 posTarget, float angleTarget);
     public Action<Vector2> OnDragBegin { get; set; }
     public Action<Vector2> OnDragEnd { get; set; }
     public Action<Vector2> OnDragChange { get; set; }
@@ -132,4 +143,10 @@ public interface ICardPressInputReceiver
     public void OnDownPressed();
     public void OnUpPressed();
 
+}
+
+public interface ISizable
+{
+    public void AlterSize(float percent);
+    public void ResetSize();
 }

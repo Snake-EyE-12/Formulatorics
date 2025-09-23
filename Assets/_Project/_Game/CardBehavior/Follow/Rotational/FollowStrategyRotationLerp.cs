@@ -7,8 +7,7 @@ public class FollowStrategyRotationLerp : MonoBehaviour, FollowRotationalStrateg
     
     public Quaternion CalculateRotation(Quaternion current, Quaternion target)
     {
-        float t = 1f - Mathf.Exp(-speed * Time.deltaTime);
-        return Quaternion.Lerp(current, target, t);
+        return Quaternion.Lerp(current, target, Utils.LerpT(speed));
     }
 }
 

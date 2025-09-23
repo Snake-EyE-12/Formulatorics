@@ -81,7 +81,11 @@ public class Zone : MonoBehaviour, IZone
         Vector3 local = slotContainer.InverseTransformPoint(anchorPoint);
 
         float halfWidth = slotContainer.rect.width * 0.5f;
-        float percent = Mathf.InverseLerp(-halfWidth, halfWidth, local.x);
+        float spacing = halfWidth / zonables.Count;
+        float leftBound = -halfWidth + spacing;
+        float rightBound = halfWidth - spacing;
+        
+        float percent = Mathf.InverseLerp(leftBound, rightBound, local.x);
 
         percent = Mathf.Clamp01(percent);
 

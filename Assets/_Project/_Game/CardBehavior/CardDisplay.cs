@@ -1,261 +1,156 @@
 using System;
-using Cobra.Utilities;
 using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
-public class CardDisplay : MonoBehaviour, ICardDisplay, ICardDisplayStateContext
+public class CardDisplay : MonoBehaviour, ICardDisplay
 {
     private FollowTranslationalStrategy followTranslationalStrategy;
     private FollowRotationalStrategy followRotationalStrategy;
-    
-    [SerializeField] private HoveringDisplayState hoveringState;
-    [SerializeField] private DraggingDisplayState draggingState;
-    [SerializeField] private IdlingDisplayState idleState;
 
-    private IShadowXOffsetFinder shadowOffsetFinder;
-    [SerializeField] private Transform shadow;
-    private Vector3 shadowInitialOffset;
-    private Vector3 shadowDesiredOffset;
-    
-    [SerializeField] private Image image;
-    [SerializeField] private TMP_Text textbox;
+    [SerializeField] private CardDisplayEffectGimbal gimbal;
+    [SerializeField] private CardDisplayEffectGimbal shadowGimbal;
+    [SerializeField] private CardDisplayEffectShadow shadow;
+
+    private Vector3 initialScale;
+    private Vector3 desiredScale;
 
     private void Awake()
     {
         followTranslationalStrategy = GetComponent<FollowTranslationalStrategy>();
         followRotationalStrategy = GetComponent<FollowRotationalStrategy>();
-        shadowOffsetFinder = GetComponent<IShadowXOffsetFinder>();
-        ChangeState(idleState);
-        SetUpTempColor();
-        InitialScale = transform.localScale;
-        DesiredScale = InitialScale;
-        shadowInitialOffset = shadow.localPosition;
-        shadowDesiredOffset = shadowInitialOffset;
+        initialScale = transform.localScale;
+        desiredScale = transform.localScale;
+        float timeDifference = Random.value;
+        gimbal.RandomizeTiming(timeDifference);
+        shadowGimbal.RandomizeTiming(timeDifference);
     }
 
-    private void SetUpTempColor()
-    {
-        image.color = Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
-    }
-
-    private ICardDisplayState activeState;
-    private void ChangeState(ICardDisplayState newState)
-    {
-        activeState?.Exit(this);
-        activeState = newState;
-        activeState?.Enter(this);
-        textbox.text = newState.GetType().Name;
-    }
-
-    private Vector2 posOffset;
-    private Quaternion angleOffset;
-    private Vector2 targetPos;
-    private Quaternion targetAngle;
-
-    public void Target(Vector2 posTarget, float angleTarget)
-    {
-        targetPos = posTarget;
-        targetAngle = Quaternion.Euler(0, 0, angleTarget);
-    }
-
-
+    
+    
     public void SetParent(Transform newParent)
     {
         transform.SetParent(newParent);
     }
-
     public void SetSiblingOrder(int siblingIndex)
     {
         transform.SetSiblingIndex(siblingIndex);
     }
 
+    private CardDisplayState displayState;
 
-    private bool hovering = false;
-    public void OnHover()
+    private void AddState(CardDisplayState state)
     {
-        hovering = true;
-        ChangeState(hoveringState);
+        displayState |= state;
+        OnStateChange();
     }
+
+    private void RemoveState(CardDisplayState state)
+    {
+        displayState &= ~state;
+        OnStateChange();
+    }
+
+    private bool HasState(CardDisplayState state) => (displayState & state) != 0;
+
+    private void OnStateChange()
+    {
+        if (HasState(CardDisplayState.Dragging))
+        {
+            shadow.SetYOffset();
+            gimbal.FollowVelocity();
+            shadowGimbal.FollowVelocity();
+        }
+        else
+        {
+            shadow.ResetYOffset();
+            if (HasState(CardDisplayState.Hovered))
+            {
+                gimbal.FollowMouse();
+                shadowGimbal.FollowMouse();
+            }
+            else
+            {
+                gimbal.Gyrate();
+                shadowGimbal.Gyrate();
+            }
+        }
+    }
+
+    public void OnHoverEnter()
+    {
+        AddState(CardDisplayState.Hovered);
+    }
+
     public void OnHoverExit()
     {
-        hovering = false;
-        ChangeState(idleState);
+        RemoveState(CardDisplayState.Hovered);
     }
 
-    private float scalePercent;
-    public void OnStartDrag(float percent)
+    public void OnDragStart()
     {
-        ChangeState(draggingState);
-        scalePercent = percent;
+        AddState(CardDisplayState.Dragging);
     }
 
-    public void OnEndDrag()
+    public void OnDragStop()
     {
-        if(hovering) ChangeState(hoveringState);
-        else ChangeState(idleState);
+        RemoveState(CardDisplayState.Dragging);
     }
 
-    [SerializeField] private float scaleSpeed = 10f;
-    private void Update()
+
+    private Vector2 anchorPos;
+    private Quaternion anchorAngle;
+    public void SetTargetAngle(float angle)
     {
-        activeState?.Update(this);
+        anchorAngle = Quaternion.Euler(0, 0, angle);
     }
 
+    public void SetTargetLocation(Vector2 position)
+    {
+        anchorPos = position;
+    }
+
+    private Vector2 Target => anchorPos;
+    private Quaternion TargetRotation => anchorAngle;
     public void ApproachDestination()
     {
-        transform.position = followTranslationalStrategy.CalculatePosition(transform.position, targetPos + posOffset);
-        transform.rotation = followRotationalStrategy.CalculateRotation(transform.rotation, targetAngle * angleOffset);
-        float t = 1f - Mathf.Exp(-scaleSpeed * Time.deltaTime);
-        transform.localScale = Vector3.Lerp(transform.localScale, DesiredScale, t);
-        shadow.transform.localPosition = Vector3.Lerp(shadow.transform.localPosition, shadowDesiredOffset + (Vector3.right * shadowOffsetFinder.GetOffset()), t);
+        transform.position = followTranslationalStrategy.CalculatePosition(transform.position, Target);
+        transform.rotation = followRotationalStrategy.CalculateRotation(transform.rotation, TargetRotation);
+        transform.localScale = followTranslationalStrategy.CalculatePosition(transform.localScale, desiredScale);
     }
-
-    [field:SerializeField] public RectTransform RectTransform { get; private set; }
-    public Vector2 GetHoverLocation()
-    {
-        return Mouse.current.position.value;
-    }
-
-    public void SetAngleOffset(Quaternion angleOffset)
-    {
-        this.angleOffset = angleOffset;
-    }
-
-    public void SetPositionOffset(Vector2 offset)
-    {
-        posOffset = offset;
-    }
-
-    public Vector3 InitialScale { get; private set; }
-    public Vector3 DesiredScale { get; set; }
-    public void SizeUp()
-    {
-        shadowDesiredOffset = shadowInitialOffset + (Vector3.up * shadowOffsetAmount);
-        DesiredScale = InitialScale * scalePercent;
-    }
-
-    [SerializeField] private float shadowOffsetAmount = -20;
-
-    public void SizeDown()
-    {
-        shadowDesiredOffset = shadowInitialOffset;
-        DesiredScale = InitialScale;
-    }
-}
-[Serializable]
-public class HoveringDisplayState : ICardDisplayState
-{
-    public void Enter(ICardDisplayStateContext context)
-    {
-    }
-
-    public void Update(ICardDisplayStateContext context)
-    {
-        Vector2 mouseScreen = context.GetHoverLocation();
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            context.RectTransform,
-            mouseScreen,
-            null,
-            out Vector2 localPos
-        );
-        Rect rect = context.RectTransform.rect;
-        float u = Mathf.InverseLerp(rect.xMin, rect.xMax, localPos.x);
-        float v = Mathf.InverseLerp(rect.yMin, rect.yMax, localPos.y);
-        Vector2 mouseUVBasedOnContextRect = new Vector2(u, v);
-
-        context.SetAngleOffset(UVToAngle(mouseUVBasedOnContextRect));
-        context.ApproachDestination();
-    }
-
     
-    [SerializeField] private Curve xHoverRotationCurve;
-    [SerializeField] private Curve yHoverRotationCurve;
-    private Quaternion UVToAngle(Vector2 mouseUV)
+
+    public void AlterSize(float percent)
     {
-        return Quaternion.Euler(
-            xHoverRotationCurve.Evaluate(mouseUV.x),
-            yHoverRotationCurve.Evaluate(mouseUV.y),
-            0
-            );
+        desiredScale = initialScale * percent;
     }
 
-    public void Exit(ICardDisplayStateContext context)
+    public void ResetSize()
     {
+        desiredScale = initialScale;
     }
 }
-[Serializable]
-public class IdlingDisplayState : ICardDisplayState
+[System.Flags]
+public enum CardDisplayState
 {
-    public void Enter(ICardDisplayStateContext context)
-    {
-        context.SetPositionOffset(Vector2.zero);
-        context.SetAngleOffset(Quaternion.identity);
-    }
-
-    public void Update(ICardDisplayStateContext context)
-    {
-        context.ApproachDestination();
-    }
-
-    public void Exit(ICardDisplayStateContext context)
-    {
-    }
-}
-[Serializable]
-public class DraggingDisplayState : ICardDisplayState
-{
-    public void Enter(ICardDisplayStateContext context)
-    {
-        context.SizeUp();
-    }
-
-    public void Update(ICardDisplayStateContext context)
-    {
-        context.ApproachDestination();
-    }
-
-    public void Exit(ICardDisplayStateContext context)
-    {
-        context.SizeDown();
-    }
+    None = 0,
+    Hovered = 1 << 0,
+    Dragging = 1 << 1,
 }
 
-public interface ICardDisplayState
-{
-    public void Enter(ICardDisplayStateContext context);
-    public void Update(ICardDisplayStateContext context);
-    public void Exit(ICardDisplayStateContext context);
-}
 
-public interface ICardDisplayStateContext
+public interface ICardDisplay : ILayerOrderable, IHasTargetDestination, ISizable
 {
-    public void ApproachDestination();
-    public RectTransform RectTransform { get; }
-    public Vector2 GetHoverLocation();
-    public void SetAngleOffset(Quaternion angleOffset);
-    public void SetPositionOffset(Vector2 position);
-    public Vector3 InitialScale { get; }
-    public Vector3 DesiredScale { get; set; }
-    public void SizeUp();
-    public void SizeDown();
-}
-
-public interface ICardDisplay : ILayerOrderable
-{
-    public void Target(Vector2 posTarget, float angleTarget);
-    public void OnHover();
+    public void OnHoverEnter();
     public void OnHoverExit();
-    public void OnStartDrag(float percent);
-    public void OnEndDrag();
+    public void OnDragStart();
+    public void OnDragStop();
 }
 
-public interface ISizable
+
+public interface IHasTargetDestination
 {
-    public void Grow(float percent);
-    public void Shrink();
-    
+    public void SetTargetAngle(float angle);
+    public void SetTargetLocation(Vector2 position);
+    public void ApproachDestination();
 }

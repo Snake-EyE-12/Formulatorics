@@ -94,14 +94,14 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     [SerializeField] private float bringToFrontGrowthPercent;
     public void OnGainHover()
     {
-        displayHandler.OnHover();
+        displayHandler.OnHoverEnter();
         ServiceLocator.Get<IFocusControl>().Focus(this);
         ServiceLocator.Get<IGroupInteractionControl>().Add_Hover(this);
     }
 
     public void OnLostHover()
     {
-        displayHandler.OnHover();
+        displayHandler.OnHoverExit();
     }
     
     #endregion
@@ -129,8 +129,9 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     public void OnDragBegin(Vector2 mousePosition)
     {
         dragging = true;
-        inputHandler.Grow(bringToFrontGrowthPercent);
-        displayHandler.OnStartDrag(bringToFrontGrowthPercent);
+        inputHandler.AlterSize(bringToFrontGrowthPercent);
+        displayHandler.AlterSize(bringToFrontGrowthPercent);
+        displayHandler.OnDragStart();
         dragOriginOffset = inputHandler.Origin() - mousePosition;
         ServiceLocator.Get<IViewControl>().Showcase(this);
     }
@@ -138,8 +139,9 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     public void OnDragEnd(Vector2 mousePosition)
     {
         dragging = false;
-        inputHandler.Shrink();
-        displayHandler.OnEndDrag();
+        inputHandler.ResetSize();
+        displayHandler.ResetSize();
+        displayHandler.OnDragStop();
         ServiceLocator.Get<IViewControl>().Conceal(this);
     }
 
@@ -215,8 +217,17 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     private void Update()
     {
         if(!dragging) anchorHandler.Follow(slotHandler.Origin());
-        displayHandler.Target(anchorHandler.Origin(), slotHandler.Angle());
-        inputHandler.Follow(anchorHandler.Origin(), slotHandler.Angle());
+        Vector2 anchorPosition = anchorHandler.Origin();
+        float slotAngle = slotHandler.Angle();
+        UpdateTargetDestinator(displayHandler, anchorPosition, slotAngle);
+        UpdateTargetDestinator(inputHandler, anchorPosition, slotAngle);
+    }
+
+    private void UpdateTargetDestinator(IHasTargetDestination destinator, Vector2 pos, float angle)
+    {
+        destinator.SetTargetLocation(pos);
+        destinator.SetTargetAngle(angle);
+        destinator.ApproachDestination();
     }
 
 }
