@@ -16,6 +16,7 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
     private ICardDisplay displayHandler;
     private ICardInputReader inputHandler;
     private ICardZoneFinder zoneHandler;
+    private ICardDataDisplay dataDisplay;
     
     private void Awake()
     {
@@ -23,6 +24,7 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
         anchorHandler = GetComponentInChildren<ICardAnchor>();
         displayHandler = GetComponentInChildren<ICardDisplay>();
         inputHandler = GetComponentInChildren<ICardInputReader>();
+        dataDisplay = GetComponentInChildren<ICardDataDisplay>();
         zoneHandler = GetComponent<ICardZoneFinder>();
     }
 
@@ -229,6 +231,15 @@ public class CardHandler : MonoBehaviour, IZonable, IHoverable, IFocusable, IDra
         destinator.SetTargetAngle(angle);
         destinator.ApproachDestination();
     }
+
+    public void LoadCardData(ICardData data)
+    {
+        cardDefinition = data;
+        dataDisplay.Display(data);
+        
+    }
+
+    private ICardData cardDefinition;
 
 }
 
