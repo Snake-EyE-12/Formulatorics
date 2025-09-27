@@ -8,30 +8,14 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Image))]
 public class ShaderSizeSetter : MonoBehaviour
 {
-    private RectTransform rectTransform;
-    private Image image;
+    [SerializeField] private RectTransform rectTransform;
+    [SerializeField] private Image image;
     private Material runtimeMaterial;
 
     private void Awake()
     {
-        rectTransform = GetComponent<RectTransform>();
-        image = GetComponent<Image>();
         BuildShader();
-        Canvas.ForceUpdateCanvases();
     }
-#if UNITY_EDITOR
-    [Button]
-    public void Apply()
-    {
-        Awake();
-        Resize();
-    }
-
-    private void OnValidate()
-    {
-        Resize();
-    }
-#endif
 
     private void Update()
     {
@@ -40,6 +24,7 @@ public class ShaderSizeSetter : MonoBehaviour
 
     private void Resize()
     {
+        if (rectTransform == null || rectTransform.rect == null) return;
         Vector2 size = rectTransform.rect.size;
         runtimeMaterial.SetVector("_RectSize", size);
     }
